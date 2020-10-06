@@ -91,7 +91,7 @@ flush(Tag) when is_atom(Tag) ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}.
 start_link(Tag) ->
     ServerName = get_local_reg_name(Tag),
-    error_logger:info_msg("Starting event storage server for ~p with name ~p", [Tag, ServerName]),
+    error_logger:warning_msg("Starting event storage server for ~p with name ~p", [Tag, ServerName]),
     gen_server:start_link({local, ServerName}, ?MODULE, [Tag], []).
 
 -spec init(Args :: term()) ->
@@ -148,7 +148,7 @@ handle_info(_Info, State) ->
 -spec terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: state()) -> term().
 terminate(Reason, #{timer_ref := TimerRef} = _State) ->
-    error_logger:info_msg("Terminating event service, reason: ~p", [Reason]),
+    error_logger:warning_msg("Terminating event service, reason: ~p", [Reason]),
     _ = erlang:cancel_timer(TimerRef),
     ok;
 terminate(_Reason, _State) ->

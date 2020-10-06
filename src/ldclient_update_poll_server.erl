@@ -42,7 +42,7 @@
 -spec start_link(Tag :: atom()) ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}.
 start_link(Tag) ->
-    error_logger:info_msg("Starting polling update server for ~p", [Tag]),
+    error_logger:warning_msg("Starting polling update server for ~p", [Tag]),
     gen_server:start_link(?MODULE, [Tag], []).
 
 -spec init(Args :: term()) ->
@@ -98,7 +98,7 @@ handle_info(_Info, State) ->
 -spec terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: state()) -> term().
 terminate(Reason, #{timer_ref := TimerRef} = _State) ->
-    error_logger:info_msg("Terminating polling, reason: ~p", [Reason]),
+    error_logger:warning_msg("Terminating polling, reason: ~p", [Reason]),
     _ = timer:cancel(TimerRef),
     ok;
 terminate(_Reason, _State) ->

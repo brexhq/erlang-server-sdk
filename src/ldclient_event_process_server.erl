@@ -50,7 +50,7 @@ send_events(Tag, Events, SummaryEvent) ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}.
 start_link(Tag) ->
     ServerName = get_local_reg_name(Tag),
-    error_logger:info_msg("Starting event processor for ~p with name ~p", [Tag, ServerName]),
+    error_logger:warning_msg("Starting event processor for ~p with name ~p", [Tag, ServerName]),
     gen_server:start_link({local, ServerName}, ?MODULE, [Tag], []).
 
 -spec init(Args :: term()) ->

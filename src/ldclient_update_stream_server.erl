@@ -38,7 +38,7 @@
 -spec start_link(Tag :: atom()) ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}.
 start_link(Tag) ->
-    error_logger:info_msg("Starting streaming update server for ~p", [Tag]),
+    error_logger:warning_msg("Starting streaming update server for ~p", [Tag]),
     gen_server:start_link(?MODULE, [Tag], []).
 
 -spec init(Args :: term()) ->
@@ -78,7 +78,7 @@ handle_cast(_Request, State) ->
     {noreply, State}.
 
 handle_info({listen}, #{stream_uri := Uri} = State) ->
-    error_logger:info_msg("Starting streaming connection to URL: ~p", [Uri]),
+    error_logger:warning_msg("Starting streaming connection to URL: ~p", [Uri]),
     NewState = do_listen(State),
     {noreply, NewState};
 handle_info({'DOWN', _Mref, process, ShotgunPid, Reason}, #{conn := ShotgunPid, backoff := Backoff} = State) ->
@@ -87,7 +87,7 @@ handle_info({'DOWN', _Mref, process, ShotgunPid, Reason}, #{conn := ShotgunPid, 
     error_logger:warning_msg("Got DOWN message from shotgun pid with reason: ~p~n", [Reason]),
     {noreply, State#{conn := undefined, backoff := NewBackoff}};
 handle_info({timeout, _TimerRef, listen}, State) ->
-    error_logger:info_msg("Reconnecting streaming connection..."),
+    error_logger:warning_msg("Reconnecting streaming connection..."),
     NewState = do_listen(State),
     {noreply, NewState};
 handle_info(_Info, State) ->
@@ -96,10 +96,10 @@ handle_info(_Info, State) ->
 -spec terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: state()) -> term().
 terminate(Reason, #{conn := undefined} = _State) ->
-    error_logger:info_msg("Terminating, reason: ~p; Pid none~n", [Reason]),
+    error_logger:warning_msg("Terminating, reason: ~p; Pid none~n", [Reason]),
     ok;
 terminate(Reason, #{conn := ShotgunPid} = _State) ->
-    error_logger:info_msg("Terminating streaming connection, reason: ~p; Pid ~p~n", [Reason, ShotgunPid]),
+    error_logger:warning_msg("Terminating streaming connection, reason: ~p; Pid ~p~n", [Reason, ShotgunPid]),
     ok = shotgun:close(ShotgunPid).
 
 code_change(_OldVsn, State, _Extra) ->
@@ -204,7 +204,7 @@ decode_data(_, Data) -> jsx:decode(Data, [return_maps]).
 -spec process_items(EventOperation :: ldclient_storage_engine:event_operation(), Data :: map(), StorageBackend :: atom(), Tag :: atom()) -> ok.
 process_items(put, Data, StorageBackend, Tag) ->
     [Flags, Segments] = get_put_items(Data),
-    error_logger:info_msg("Received event with ~p flags and ~p segments", [maps:size(Flags), maps:size(Segments)]),
+    error_logger:warning_msg("Received event with ~p flags and ~p segments", [maps:size(Flags), maps:size(Segments)]),
     ok = StorageBackend:put_clean(Tag, flags, Flags),
     ok = StorageBackend:put_clean(Tag, segments, Segments);
 process_items(patch, Data, StorageBackend, Tag) ->

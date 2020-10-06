@@ -27,7 +27,7 @@
 ) ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}.
 start_link(SupName, UpdateSupName, UpdateWorkerModule, EventSupName, Tag) ->
-    error_logger:info_msg("Starting instance supervisor for ~p with name ~p", [Tag, SupName]),
+    error_logger:warning_msg("Starting instance supervisor for ~p with name ~p", [Tag, SupName]),
     supervisor:start_link({local, SupName}, ?MODULE, [UpdateSupName, UpdateWorkerModule, EventSupName, Tag]).
 
 -spec init(Args :: term()) ->
