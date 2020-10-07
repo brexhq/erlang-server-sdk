@@ -153,26 +153,40 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
         {error, gun_open_timeout} ->
             {error, gun_open_timeout, "Connection timeout"};
         {ok, Pid} ->
-            _ = monitor(process, Pid),
-            F = fun(nofin, _Ref, Bin) ->
-                    process_event(parse_shotgun_event(Bin), StorageBackend, Tag);
-                (fin, _Ref, _Bin) ->
-                    % Connection ended, close monitored shotgun client pid, so we can reconnect
-                    error_logger:warning_msg("Streaming connection ended"),
-                    shotgun:close(Pid)
-                end,
-            Options = #{async => true, async_mode => sse, handle_event => F},
-            Headers = #{
-                "Authorization" => SdkKey,
-                "User-Agent" => ldclient_settings:get_user_agent()
-            },
-            case shotgun:get(Pid, Path ++ Query, Headers, Options) of
-                {error, Reason} ->
+            case is_process_alive(Pid) of
+                true ->
+                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                false ->
+                    error_logger:warning_msg("The shotgun Pid is not alive ~p", [Pid]),
                     shotgun:close(Pid),
-                    {error, get_request_failed, Reason};
-                {ok, _Ref} ->
-                    {ok, Pid}
+                    {error, gun_open_timeout, "The shotgun Pid is not alive"}
             end
+    end.
+
+%% @doc monitor shotgun process
+%% @private
+%%
+%% @end
+monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey) ->
+    _ = monitor(process, Pid),
+    F = fun(nofin, _Ref, Bin) ->
+            process_event(parse_shotgun_event(Bin), StorageBackend, Tag);
+        (fin, _Ref, _Bin) ->
+            % Connection ended, close monitored shotgun client pid, so we can reconnect
+            error_logger:warning_msg("Streaming connection ended"),
+            shotgun:close(Pid)
+        end,
+    Options = #{async => true, async_mode => sse, handle_event => F},
+    Headers = #{
+        "Authorization" => SdkKey,
+        "User-Agent" => ldclient_settings:get_user_agent()
+    },
+    case shotgun:get(Pid, Path ++ Query, Headers, Options) of
+        {error, Reason} ->
+            shotgun:close(Pid),
+            {error, get_request_failed, Reason};
+        {ok, _Ref} ->
+            {ok, Pid}
     end.
 
 %% @doc Processes server-sent event received from shotgun
