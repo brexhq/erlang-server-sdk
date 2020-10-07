@@ -159,7 +159,7 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
                 false ->
                     error_logger:warning_msg("The shotgun Pid is not alive ~p", [Pid]),
                     shotgun:close(Pid),
-                    {error, gun_open_timeout, "The shotgun Pid is not alive"}
+                    {error, gun_open_failed, "The shotgun Pid is not alive"}
             end
     end.
 
