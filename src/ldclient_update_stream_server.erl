@@ -157,16 +157,16 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
             IsPidAlive = is_process_alive(Pid),
             error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, IsPidAlive]),
             case httpc:request(Uri) of
-                {ok, {{_http_version, 503, reason}, _headers, body}} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code 503 with reason ~p~n", [reason]),
+                {ok, {{_HttpVersion, 503, Reason}, _Headers, _Body}} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code 503 with reason ~p~n", [Reason]),
                     error_logger:warning_msg("failed to send http request"),
                     shotgun:close(Pid),
                     {error, gun_open_failed, "failed to send http request"};
-                {ok, {{_http_version, status_code, reason}, _headers, body}} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with reason ~p~n", [status_code, reason]),
+                {ok, {{_HttpVersion, StatusCode, Reason}, _Headers, _Body}} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with reason ~p~n", [StatusCode, Reason]),
                     monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
-                {ok, status_code, body} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with body ~p~n", [status_code, body]),
+                {ok, StatusCode, Body} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with body ~p~n", [StatusCode, Body]),
                     monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {ok, _} ->
                     error_logger:warning_msg("http request sent to the streaming url"),
