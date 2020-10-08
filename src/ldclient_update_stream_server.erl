@@ -154,8 +154,8 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
             {error, gun_open_timeout, "Connection timeout"};
         {ok, Pid} ->
             error_logger:warning_msg("opened shotgun connection with pid: ~p~n", [Pid]),
-            is_pid_alive = is_process_alive(Pid),
-            error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, is_pid_alive]),
+            IsPidAlive = is_process_alive(Pid),
+            error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, IsPidAlive]),
             case httpc:request(Uri) of
                 {ok, {{_http_version, 503, reason}, _headers, body}} ->
                     error_logger:warning_msg("http request sent to the streaming url. Obtained status code 503 with reason ~p~n", [reason]),
