@@ -153,13 +153,28 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
         {error, gun_open_timeout} ->
             {error, gun_open_timeout, "Connection timeout"};
         {ok, Pid} ->
-            case is_process_alive(Pid) of
-                true ->
-                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
-                false ->
-                    error_logger:warning_msg("The shotgun Pid is not alive ~p", [Pid]),
+            error_logger:warning_msg("opened shotgun connection with pid: ~p~n", [Pid]),
+            is_pid_alive = is_process_alive(Pid),
+            error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, is_pid_alive]),
+            case httpc:request(Uri) of
+                {ok, {{_http_version, 503, reason}, _headers, body}} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code 503 with reason ~p~n", [reason]),
+                    error_logger:warning_msg("failed to send http request"),
                     shotgun:close(Pid),
-                    {error, gun_open_failed, "The shotgun Pid is not alive"}
+                    {error, gun_open_failed, "failed to send http request"};
+                {ok, {{_http_version, status_code, reason}, _headers, body}} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with reason ~p~n", [status_code, reason]),
+                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                {ok, status_code, body} ->
+                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with body ~p~n", [status_code, body]),
+                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                {ok, _} ->
+                    error_logger:warning_msg("http request sent to the streaming url"),
+                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                {error, _} ->
+                    error_logger:warning_msg("failed to send http request"),
+                    shotgun:close(Pid),
+                    {error, gun_open_failed, "failed to send http request"}
             end
     end.
 
