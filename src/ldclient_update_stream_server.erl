@@ -158,21 +158,21 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
             error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, IsPidAlive]),
             case httpc:request(Uri) of
                 {ok, {{_HttpVersion, 503, Reason}, _Headers, _Body}} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code 503 with reason ~p~n", [Reason]),
+                    error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code 503 with reason ~p~n", [Pid, Reason]),
                     error_logger:warning_msg("failed to send http request"),
                     shotgun:close(Pid),
                     {error, gun_open_failed, "failed to send http request"};
                 {ok, {{_HttpVersion, StatusCode, Reason}, _Headers, _Body}} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with reason ~p~n", [StatusCode, Reason]),
+                    error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code ~p with reason ~p~n", [Pid, StatusCode, Reason]),
                     monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {ok, StatusCode, Body} ->
-                    error_logger:warning_msg("http request sent to the streaming url. Obtained status code ~p with body ~p~n", [StatusCode, Body]),
+                    error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code ~p with body ~p~n", [Pid, StatusCode, Body]),
                     monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {ok, _} ->
-                    error_logger:warning_msg("http request sent to the streaming url"),
+                    error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p", [Pid]),
                     monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {error, _} ->
-                    error_logger:warning_msg("failed to send http request"),
+                    error_logger:warning_msg("failed to send http request with shotgun Pid ~p", [Pid]),
                     shotgun:close(Pid),
                     {error, gun_open_failed, "failed to send http request"}
             end
@@ -233,7 +233,7 @@ decode_data(_, Data) -> jsx:decode(Data, [return_maps]).
 -spec process_items(EventOperation :: ldclient_storage_engine:event_operation(), Data :: map(), StorageBackend :: atom(), Tag :: atom()) -> ok.
 process_items(put, Data, StorageBackend, Tag) ->
     [Flags, Segments] = get_put_items(Data),
-    error_logger:warning_msg("Received event with ~p flags and ~p segments", [maps:size(Flags), maps:size(Segments)]),
+    error_logger:warning_msg("Received event with ~p flags and ~p segments, for ldclient tag ~p~n", [maps:size(Flags), maps:size(Segments), Tag]),
     ok = StorageBackend:put_clean(Tag, flags, Flags),
     ok = StorageBackend:put_clean(Tag, segments, Segments);
 process_items(patch, Data, StorageBackend, Tag) ->
