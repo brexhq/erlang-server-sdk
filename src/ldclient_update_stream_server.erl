@@ -155,7 +155,7 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
         {ok, Pid} ->
             error_logger:warning_msg("opened shotgun connection with pid: ~p~n", [Pid]),
             IsPidAlive = is_process_alive(Pid),
-            error_logger:warning_msg("checking if the shotgun Pid ~p is alive ~p~n", [Pid, IsPidAlive]),
+            error_logger:warning_msg("checking if the shotgun Pid ~p is alive: ~p~n", [Pid, IsPidAlive]),
             case httpc:request(Uri) of
                 {ok, {{_HttpVersion, 503, Reason}, _Headers, _Body}} ->
                     error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code 503 with reason ~p~n", [Pid, Reason]),
@@ -164,18 +164,33 @@ do_listen(Uri, StorageBackend, Tag, SdkKey) ->
                     {error, gun_open_failed, "failed to send http request"};
                 {ok, {{_HttpVersion, StatusCode, Reason}, _Headers, _Body}} ->
                     error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code ~p with reason ~p~n", [Pid, StatusCode, Reason]),
-                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                    double_check_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {ok, StatusCode, Body} ->
                     error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p. Obtained status code ~p with body ~p~n", [Pid, StatusCode, Body]),
-                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                    double_check_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {ok, _} ->
                     error_logger:warning_msg("http request sent to the streaming url with shotgun Pid ~p", [Pid]),
-                    monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
+                    double_check_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey);
                 {error, _} ->
                     error_logger:warning_msg("failed to send http request with shotgun Pid ~p", [Pid]),
                     shotgun:close(Pid),
                     {error, gun_open_failed, "failed to send http request"}
             end
+    end.
+
+%% @doc double check shotgun process before start streaming process
+%% @private
+%%
+%% @end
+double_check_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey) ->
+    case shotgun:head(Pid, Path ++ Query, #{}, #{}) of
+        {error, Reason} ->
+            IsPidAlive = is_process_alive(Pid),
+            error_logger:warning_msg("again checking if the shotgun Pid ~p is alive: ~p~n", [Pid, IsPidAlive]),
+            shotgun:close(Pid),
+            {error, get_request_failed, Reason};
+        {ok, _Ref} ->
+            monitor_shotgun_process(Pid, Path, Query, StorageBackend, Tag, SdkKey)
     end.
 
 %% @doc monitor shotgun process
